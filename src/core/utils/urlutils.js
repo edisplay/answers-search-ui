@@ -1,4 +1,5 @@
-import { PRODUCTION, SANDBOX } from '../constants';
+import { CloudRegion } from '@yext/search-core';
+import { PRODUCTION, SANDBOX, CLOUD_REGION } from '../constants';
 import SearchParams from '../../ui/dom/searchparams';
 import StorageKeys from '../storage/storagekeys';
 import ComponentTypes from '../../ui/components/componenttypes';
@@ -12,19 +13,14 @@ export function getLiveApiUrl (env = PRODUCTION) {
 }
 
 /**
- * Returns the base url for the live api backend in the desired environment.
- * @param {string} env The desired environment.
- */
-export function getCachedLiveApiUrl (env = PRODUCTION) {
-  return env === SANDBOX ? 'https://liveapi-sandbox.yext.com' : 'https://liveapi-cached.yext.com';
-}
-
-/**
  * Returns the base url for the analytics backend in the desired environment.
  * @param {string} env The desired environment.
  * @param {boolean} conversionTrackingEnabled If conversion tracking has been opted into.
  */
 export function getAnalyticsUrl (env = PRODUCTION, conversionTrackingEnabled = false) {
+  if (isEu()) {
+    return 'https://www.eu.yextevents.com';
+  }
   if (conversionTrackingEnabled) {
     return env === SANDBOX
       ? 'https://sandbox-realtimeanalytics.yext.com'
@@ -33,6 +29,10 @@ export function getAnalyticsUrl (env = PRODUCTION, conversionTrackingEnabled = f
   return env === SANDBOX
     ? 'https://sandbox-answers.yext-pixel.com'
     : 'https://answers.yext-pixel.com';
+}
+
+function isEu () {
+  return CLOUD_REGION.toLowerCase() === CloudRegion.EU.toString();
 }
 
 /**

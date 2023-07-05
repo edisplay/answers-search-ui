@@ -8,21 +8,20 @@ msgid_plural "([[resultsCount]] results)"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/templates/search/autocomplete.hbs:6
+#: src/ui/templates/search/autocomplete.hbs:7
 msgid "[[resultsCount]] [[label]] autocomplete option found."
 msgid_plural "[[resultsCount]] [[label]] autocomplete options found."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/ui/templates/search/autocomplete.hbs:14
-#: src/ui/templates/search/autocomplete.hbs:23
+#: src/ui/templates/search/autocomplete.hbs:15
+#: src/ui/templates/search/autocomplete.hbs:24
 msgid "[[resultsCount]] autocomplete option found."
 msgid_plural "[[resultsCount]] autocomplete options found."
 msgstr[0] ""
 msgstr[1] ""
 
 #: src/ui/templates/results/resultsheader.hbs:19
-#: src/ui/templates/results/verticalresultscount.hbs:3
 msgid "[[start]] through [[end]] of [[resultsCount]]"
 msgstr ""
 
@@ -200,7 +199,7 @@ msgid "We're sorry, an error occurred."
 msgstr ""
 
 #: src/ui/templates/search/filtersearch.hbs:12
-#: src/ui/templates/search/search.hbs:29
+#: src/ui/templates/search/search.hbs:30
 msgid "When autocomplete results are available, use up and down arrows to review and enter to select."
 msgstr ""
 
@@ -360,7 +359,7 @@ msgctxt "Example: 1-10 of 50"
 msgid "<span class=\"yxt-ResultsHeader-resultsCountStart\">[[start]]</span> <span class=\"yxt-ResultsHeader-resultsCountDash\">-</span> <span class=\"yxt-ResultsHeader-resultsCountEnd\">[[end]]</span> <span class=\"yxt-ResultsHeader-resultsCountOf\">of</span> <span class=\"yxt-ResultsHeader-resultsCountTotal\">[[resultsCount]]</span>"
 msgstr ""
 
-#: src/ui/templates/results/verticalresultscount.hbs:5
+#: src/ui/templates/results/verticalresultscount.hbs:3
 msgctxt "Example: 1-10 of 50"
 msgid ""
 "<span class=\"yxt-VerticalResultsCount-start\">[[start]]</span>\n"

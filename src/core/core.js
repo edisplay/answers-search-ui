@@ -1,5 +1,7 @@
 /** @module Core */
-import { provideCore } from '@yext/answers-core/lib/commonjs';
+import { provideCore } from '@yext/search-core/lib/commonjs';
+// Using the ESM build for importing the Environment enum due to an issue importing the commonjs version
+import { Environment } from '@yext/search-core';
 import { generateUUID } from './utils/uuid';
 import SearchDataTransformer from './search/searchdatatransformer';
 
@@ -17,8 +19,7 @@ import FilterRegistry from './filters/filterregistry';
 import DirectAnswer from './models/directanswer';
 import AutoCompleteResponseTransformer from './search/autocompleteresponsetransformer';
 
-import { PRODUCTION, ENDPOINTS, LIB_VERSION } from './constants';
-import { getCachedLiveApiUrl, getLiveApiUrl } from './utils/urlutils';
+import { PRODUCTION, LIB_VERSION, CLOUD_REGION, SANDBOX } from './constants';
 import { SearchParams } from '../ui';
 import SearchStates from './storage/searchstates';
 import Searcher from './models/searcher';
@@ -113,13 +114,19 @@ export default class Core {
      */
     this._environment = config.environment || PRODUCTION;
 
+    /**
+     * Determines the region of the api endpoints used when making search requests.
+     * @type {string}
+     */
+    this._cloudRegion = CLOUD_REGION;
+
     /** @type {string} */
     this._verticalKey = config.verticalKey;
 
     /** @type {ComponentManager} */
     this._componentManager = config.componentManager;
 
-    /** @type {import('@yext/answers-core').AdditionalHttpHeaders} */
+    /** @type {import('@yext/search-core').AdditionalHttpHeaders} */
     this._additionalHttpHeaders = mergeAdditionalHttpHeaders(config.additionalHttpHeaders);
   }
 
@@ -136,34 +143,22 @@ export default class Core {
    * Initializes the {@link Core} by providing it with an instance of the Core library.
    */
   init (config) {
+    const environment = this._environment === SANDBOX ? Environment.SANDBOX : Environment.PROD;
     const params = {
       ...(this._token && { token: this._token }),
       ...(this._apiKey && { apiKey: this._apiKey }),
       experienceKey: this._experienceKey,
       locale: this._locale,
       experienceVersion: this._experienceVersion,
-      endpoints: this._getServiceUrls(),
       additionalQueryParams: {
         jsLibVersion: LIB_VERSION
       },
+      cloudRegion: this._cloudRegion,
+      environment,
       ...config
     };
 
     this._coreLibrary = provideCore(params);
-  }
-
-  /**
-   * Get the urls for each service based on the environment.
-   */
-  _getServiceUrls () {
-    return {
-      universalSearch: getLiveApiUrl(this._environment) + ENDPOINTS.UNIVERSAL_SEARCH,
-      verticalSearch: getLiveApiUrl(this._environment) + ENDPOINTS.VERTICAL_SEARCH,
-      questionSubmission: getLiveApiUrl(this._environment) + ENDPOINTS.QUESTION_SUBMISSION,
-      universalAutocomplete: getCachedLiveApiUrl(this._environment) + ENDPOINTS.UNIVERSAL_AUTOCOMPLETE,
-      verticalAutocomplete: getCachedLiveApiUrl(this._environment) + ENDPOINTS.VERTICAL_AUTOCOMPLETE,
-      filterSearch: getCachedLiveApiUrl(this._environment) + ENDPOINTS.FILTER_SEARCH
-    };
   }
 
   /**
@@ -259,7 +254,7 @@ export default class Core {
         queryId: sendQueryId && this.storage.get(StorageKeys.QUERY_ID),
         retrieveFacets: this._isDynamicFiltersEnabled,
         facets: this.filterRegistry.getFacetsPayload(),
-        staticFilters: this.filterRegistry.getStaticFilterPayload(),
+        staticFilter: this.filterRegistry.getStaticFilterPayload(),
         offset: this.storage.get(StorageKeys.SEARCH_OFFSET) || 0,
         skipSpellCheck: this.storage.get(StorageKeys.SKIP_SPELL_CHECK),
         queryTrigger: queryTriggerForApi,
@@ -718,9 +713,9 @@ export default class Core {
   }
 
   /**
-   * Gets the location object needed for answers-core
+   * Gets the location object needed for search-core
    *
-   * @returns {LatLong|undefined} from answers-core
+   * @returns {LatLong|undefined} from search-core
    */
   _getLocationPayload () {
     const geolocation = this.storage.get(StorageKeys.GEOLOCATION);

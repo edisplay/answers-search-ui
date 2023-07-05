@@ -1,4 +1,4 @@
-name: Deploy assets to AWS S3
+name: Deploy assets to AWS S3 and GCP Cloud Storage
 
 on:
   workflow_call:
@@ -21,18 +21,17 @@ on:
         required: true
 
 jobs:
-  deploy:
+  deploy-aws:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2
-      - name: Download build-output artifact
-        uses: actions/download-artifact@v2
+      - uses: actions/checkout@v3
+      - name: Download build-output-US artifact
+        uses: actions/download-artifact@v3
         with:
-          name: build-output
+          name: build-output-US
           path: dist/
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
