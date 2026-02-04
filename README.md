@@ -348,9 +348,9 @@ The visitor object ties a user's identity to their searches and actions. The vis
 
 ```js
     visitor: {
-      // Required, the ID associated with the user. This will be the yextUserId if Yext Auth is used.
+      // Required, the ID associated with the user. This will be the yextUserId if Yext Auth is used. Max of 64 characters.
       id: '123919',
-      // Optional, the method used to generate the visitor ID.
+      // Optional, the method used to generate the visitor ID. Max of 16 characters.
       idMethod: 'YEXT_USER',
     },
 ```
@@ -1469,7 +1469,7 @@ ANSWERS.addComponent('Facets', {
 
 ### Transforming Facets
 
-The `transformFacets` option of the Facets component allows facets data to be fully customized. The function takes in and returns an array of the answers-core DisplayableFacet which is described [here](https://github.com/yext/answers-core/blob/master/docs/answers-core.displayablefacet.md). The function also has access to the Facets config as the second parameter.
+The `transformFacets` option of the Facets component allows facets data to be fully customized. The function takes in and returns an array of the search-core DisplayableFacet which is described [here](https://github.com/yext/search-core/blob/master/docs/search-core.displayablefacet.md). The function also has access to the Facets config as the second parameter.
 
 Here's an example of using this option to customize a boolean facet.
 

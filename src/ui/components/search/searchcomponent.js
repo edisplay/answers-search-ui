@@ -275,7 +275,9 @@ export default class SearchComponent extends Component {
       shouldHideOnEmptySearch: config.autocomplete && config.autocomplete.shouldHideOnEmptySearch,
       onOpen: config.autocomplete && config.autocomplete.onOpen,
       onClose: config.autocomplete && config.autocomplete.onClose,
-      customPrompts: config.autocomplete && config.autocomplete.customPrompts
+      customPrompts: config.autocomplete && config.autocomplete.customPrompts,
+      autocompleteContainerIdName: this.autocompleteContainerIdName,
+      disabled: this._autocompleteDisabled
     };
 
     if (!this._isTwin) {
@@ -317,6 +319,13 @@ export default class SearchComponent extends Component {
     this._customMicIconUrl = config.voiceSearch?.customMicIconUrl;
 
     this._customListeningIconUrl = config.voiceSearch?.customListeningIconUrl;
+
+    /**
+     * Disables autocomplete if set to true.
+     * Optionally provided, defaults to false.
+     * @type {boolean}
+     */
+    this._autocompleteDisabled = config.autocomplete?.disabled === true;
   }
 
   /**
@@ -541,6 +550,10 @@ export default class SearchComponent extends Component {
   initAutoComplete (inputSelector) {
     this._inputEl = inputSelector;
 
+    if (this._autocompleteDisabled) {
+      return;
+    }
+
     if (this._autocomplete) {
       this._autocomplete.remove();
     }
@@ -583,7 +596,7 @@ export default class SearchComponent extends Component {
    * @returns {Promise} A promise that will perform the query and update storage accordingly.
    */
   promptForLocation (query) {
-    if (this._promptForLocation) {
+    if (!this._autocompleteDisabled && this._promptForLocation) {
       return this.fetchQueryIntents(query)
         .then(queryIntents => queryIntents?.includes('NEAR_ME'))
         .then(queryHasNearMeIntent => {
@@ -677,6 +690,7 @@ export default class SearchComponent extends Component {
       labelText: this.labelText,
       inputLabelIdName: this.inputLabelIdName,
       submitIcon: this.submitIcon,
+      searchBarContainerId: this._container?.id || '',
       submitText: this.submitText,
       clearText: this.clearText,
       showClearButton: this._showClearButton,

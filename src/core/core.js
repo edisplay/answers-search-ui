@@ -1,5 +1,7 @@
 /** @module Core */
-import { provideCore } from '@yext/answers-core/lib/commonjs';
+import { provideCore } from '@yext/search-core/lib/commonjs';
+// Using the ESM build for importing the Environment enum due to an issue importing the commonjs version
+import { CloudChoice, Environment } from '@yext/search-core';
 import { generateUUID } from './utils/uuid';
 import SearchDataTransformer from './search/searchdatatransformer';
 
@@ -17,12 +19,12 @@ import FilterRegistry from './filters/filterregistry';
 import DirectAnswer from './models/directanswer';
 import AutoCompleteResponseTransformer from './search/autocompleteresponsetransformer';
 
-import { PRODUCTION, ENDPOINTS, LIB_VERSION } from './constants';
-import { getCachedLiveApiUrl, getLiveApiUrl } from './utils/urlutils';
+import { PRODUCTION, LIB_VERSION, CLOUD_REGION, SANDBOX, GLOBAL_MULTI, GLOBAL_GCP } from './constants';
 import { SearchParams } from '../ui';
 import SearchStates from './storage/searchstates';
 import Searcher from './models/searcher';
 import { mergeAdditionalHttpHeaders } from './utils/mergeAdditionalHttpHeaders';
+import GenerativeDirectAnswer from './models/generativedirectanswer';
 
 /** @typedef {import('./storage/storage').default} Storage */
 
@@ -113,13 +115,25 @@ export default class Core {
      */
     this._environment = config.environment || PRODUCTION;
 
+    /**
+     * Determines the region of the api endpoints used when making search requests.
+     * @type {string}
+     */
+    this._cloudRegion = CLOUD_REGION;
+
+    /**
+     * Determines the cloud choice of the api endpoints used when making search requests.
+     * @type {string}
+     */
+    this._cloudChoice = config.cloudChoice || GLOBAL_MULTI;
+
     /** @type {string} */
     this._verticalKey = config.verticalKey;
 
     /** @type {ComponentManager} */
     this._componentManager = config.componentManager;
 
-    /** @type {import('@yext/answers-core').AdditionalHttpHeaders} */
+    /** @type {import('@yext/search-core').AdditionalHttpHeaders} */
     this._additionalHttpHeaders = mergeAdditionalHttpHeaders(config.additionalHttpHeaders);
   }
 
@@ -133,37 +147,36 @@ export default class Core {
   }
 
   /**
+   * Sets a reference in core to the global ResultsUpdateListener.
+   *
+   * @param {ResultsUpdateListener} resultsUpdateListener
+   */
+  setResultsUpdateListener (resultsUpdateListener) {
+    this.resultsUpdateListener = resultsUpdateListener;
+  }
+
+  /**
    * Initializes the {@link Core} by providing it with an instance of the Core library.
    */
   init (config) {
+    const environment = this._environment === SANDBOX ? Environment.SANDBOX : Environment.PROD;
+    const cloudChoice = this._cloudChoice === GLOBAL_GCP ? CloudChoice.GLOBAL_GCP : CloudChoice.GLOBAL_MULTI;
     const params = {
       ...(this._token && { token: this._token }),
       ...(this._apiKey && { apiKey: this._apiKey }),
       experienceKey: this._experienceKey,
       locale: this._locale,
       experienceVersion: this._experienceVersion,
-      endpoints: this._getServiceUrls(),
       additionalQueryParams: {
         jsLibVersion: LIB_VERSION
       },
+      cloudRegion: this._cloudRegion,
+      cloudChoice,
+      environment,
       ...config
     };
 
     this._coreLibrary = provideCore(params);
-  }
-
-  /**
-   * Get the urls for each service based on the environment.
-   */
-  _getServiceUrls () {
-    return {
-      universalSearch: getLiveApiUrl(this._environment) + ENDPOINTS.UNIVERSAL_SEARCH,
-      verticalSearch: getLiveApiUrl(this._environment) + ENDPOINTS.VERTICAL_SEARCH,
-      questionSubmission: getLiveApiUrl(this._environment) + ENDPOINTS.QUESTION_SUBMISSION,
-      universalAutocomplete: getCachedLiveApiUrl(this._environment) + ENDPOINTS.UNIVERSAL_AUTOCOMPLETE,
-      verticalAutocomplete: getCachedLiveApiUrl(this._environment) + ENDPOINTS.VERTICAL_AUTOCOMPLETE,
-      filterSearch: getCachedLiveApiUrl(this._environment) + ENDPOINTS.FILTER_SEARCH
-    };
   }
 
   /**
@@ -259,7 +272,7 @@ export default class Core {
         queryId: sendQueryId && this.storage.get(StorageKeys.QUERY_ID),
         retrieveFacets: this._isDynamicFiltersEnabled,
         facets: this.filterRegistry.getFacetsPayload(),
-        staticFilters: this.filterRegistry.getStaticFilterPayload(),
+        staticFilter: this.filterRegistry.getStaticFilterPayload(),
         offset: this.storage.get(StorageKeys.SEARCH_OFFSET) || 0,
         skipSpellCheck: this.storage.get(StorageKeys.SKIP_SPELL_CHECK),
         queryTrigger: queryTriggerForApi,
@@ -280,6 +293,7 @@ export default class Core {
         this._persistLocationRadius();
         this._reportFollowUpQueryEvent(data[StorageKeys.QUERY_ID], Searcher.VERTICAL);
 
+        this.storage.set(StorageKeys.SEARCH_ID, data[StorageKeys.SEARCH_ID]);
         this.storage.set(StorageKeys.QUERY_ID, data[StorageKeys.QUERY_ID]);
         this.storage.set(StorageKeys.NAVIGATION, data[StorageKeys.NAVIGATION]);
         this.storage.set(StorageKeys.ALTERNATIVE_VERTICALS, data[StorageKeys.ALTERNATIVE_VERTICALS]);
@@ -334,6 +348,7 @@ export default class Core {
   clearResults () {
     this.storage.set(StorageKeys.QUERY, null);
     this.storage.set(StorageKeys.QUERY_ID, '');
+    this.storage.set(StorageKeys.SEARCH_ID, '');
     this.storage.set(StorageKeys.RESULTS_HEADER, {});
     this.storage.set(StorageKeys.SPELL_CHECK, {}); // TODO has a model but not cleared w new
     this.storage.set(StorageKeys.DYNAMIC_FILTERS, {}); // TODO has a model but not cleared w new
@@ -344,6 +359,7 @@ export default class Core {
     this.storage.set(StorageKeys.LOCATION_BIAS, new LocationBias({}));
     this.storage.set(StorageKeys.VERTICAL_RESULTS, new VerticalResults({}));
     this.storage.set(StorageKeys.UNIVERSAL_RESULTS, new UniversalResults({}));
+    this.storage.set(StorageKeys.GENERATIVE_DIRECT_ANSWER, new GenerativeDirectAnswer({}));
   }
 
   /**
@@ -398,6 +414,7 @@ export default class Core {
       .then(response => SearchDataTransformer.transformUniversal(response, urls, this._fieldFormatters))
       .then(data => {
         this._reportFollowUpQueryEvent(data[StorageKeys.QUERY_ID], Searcher.UNIVERSAL);
+        this.storage.set(StorageKeys.SEARCH_ID, data[StorageKeys.SEARCH_ID]);
         this.storage.set(StorageKeys.QUERY_ID, data[StorageKeys.QUERY_ID]);
         this.storage.set(StorageKeys.NAVIGATION, data[StorageKeys.NAVIGATION]);
         this.storage.set(StorageKeys.DIRECT_ANSWER, data[StorageKeys.DIRECT_ANSWER]);
@@ -424,6 +441,31 @@ export default class Core {
       })
       .catch(error => {
         console.error('The following problem was encountered during universal search: ' + error);
+      });
+  }
+
+  /**
+   * Attempt to generate a direct answer for the query from the given vertical results.
+   *
+   * @param {VerticalResults[]} verticalResults list of search-core VerticalResults
+   * @param {string} searcher the type of search that generated these results (Universal or Vertical)
+   */
+  generativeDirectAnswer (verticalResults, searcher) {
+    const searchId = this.storage.get(StorageKeys.SEARCH_ID);
+    const searchTerm = this.storage.get(StorageKeys.QUERY);
+    return this._coreLibrary
+      .generativeDirectAnswer({
+        searchId,
+        searchTerm,
+        results: verticalResults,
+        additionalHttpHeaders: this._additionalHttpHeaders
+      })
+      .then(response => {
+        const generativeDirectAnswer = GenerativeDirectAnswer.fromCore(response, searcher, verticalResults);
+        this.storage.set(StorageKeys.GENERATIVE_DIRECT_ANSWER, generativeDirectAnswer);
+      }).catch(error => {
+        this.storage.set(StorageKeys.GENERATIVE_DIRECT_ANSWER, new GenerativeDirectAnswer({}));
+        console.error('Failed to generate direct answer with the following error: ' + error);
       });
   }
 
@@ -491,9 +533,13 @@ export default class Core {
    * @param {string} namespace the namespace to use for the storage key
    */
   autoCompleteUniversal (input, namespace) {
+    const autocompleteLimit = this.storage.get(StorageKeys.SEARCH_CONFIG)?.autocompleteLimit;
     return this._coreLibrary
       .universalAutocomplete({
         input: input,
+        ...(autocompleteLimit && {
+          limit: autocompleteLimit
+        }),
         sessionTrackingEnabled: this.storage.get(StorageKeys.SESSIONS_OPT_IN).value,
         additionalHttpHeaders: this._additionalHttpHeaders
       })
@@ -515,10 +561,14 @@ export default class Core {
    * @param {string} verticalKey the vertical key for the experience
    */
   autoCompleteVertical (input, namespace, verticalKey) {
+    const autocompleteLimit = this.storage.get(StorageKeys.SEARCH_CONFIG)?.autocompleteLimit;
     return this._coreLibrary
       .verticalAutocomplete({
         input: input,
         verticalKey: verticalKey,
+        ...(autocompleteLimit && {
+          limit: autocompleteLimit
+        }),
         sessionTrackingEnabled: this.storage.get(StorageKeys.SESSIONS_OPT_IN).value,
         additionalHttpHeaders: this._additionalHttpHeaders
       })
@@ -718,9 +768,9 @@ export default class Core {
   }
 
   /**
-   * Gets the location object needed for answers-core
+   * Gets the location object needed for search-core
    *
-   * @returns {LatLong|undefined} from answers-core
+   * @returns {LatLong|undefined} from search-core
    */
   _getLocationPayload () {
     const geolocation = this.storage.get(StorageKeys.GEOLOCATION);

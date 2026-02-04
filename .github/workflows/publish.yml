@@ -1,0 +1,14 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - "*"
+      - "!search-bar-v*"
+
+permissions:
+  id-token: write # Required for OIDC
+
+jobs:
+  publish:
+    uses: yext/slapshot-reusable-workflows/.github/workflows/publish.yml@v1
