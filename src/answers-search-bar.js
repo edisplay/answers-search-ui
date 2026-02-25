@@ -177,7 +177,8 @@ class AnswersSearchBar {
         parsedConfig.businessId,
         parsedConfig.analyticsEventsEnabled,
         parsedConfig.analyticsOptions,
-        parsedConfig.environment);
+        parsedConfig.environment,
+        parsedConfig.cloudChoice);
 
       this.components.setAnalyticsReporter(this._analyticsReporterService);
     }
@@ -194,7 +195,8 @@ class AnswersSearchBar {
       onVerticalSearch: parsedConfig.onVerticalSearch,
       onUniversalSearch: parsedConfig.onUniversalSearch,
       environment: parsedConfig.environment,
-      componentManager: this.components
+      componentManager: this.components,
+      cloudChoice: parsedConfig.cloudChoice
     });
 
     if (parsedConfig.onStateChange && typeof parsedConfig.onStateChange === 'function') {
