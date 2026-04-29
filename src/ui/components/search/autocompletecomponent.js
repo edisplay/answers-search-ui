@@ -151,6 +151,12 @@ export default class AutoCompleteComponent extends Component {
      * @type {string[]}
      */
     this.customPrompts = opts.customPrompts;
+
+    /**
+     * Whether to disable autocomplete
+     * @type {boolean}
+     */
+    this._disabled = opts.disabled || false;
   }
 
   /**
@@ -214,6 +220,7 @@ export default class AutoCompleteComponent extends Component {
       resultIndex: this._resultIndex,
       promptHeader: this._originalQuery.length === 0 ? this.promptHeader : null,
       listLabelIdName: this.listLabelIdName,
+      autocompleteContainerIdName: `yxt-AutoComplete-container-${this._config.name?.replace(/\./g, '-') || ''}`,
       eventOptions: this.eventOptions(data)
     }));
   }
@@ -412,6 +419,9 @@ export default class AutoCompleteComponent extends Component {
   }
 
   autoComplete (input) {
+    if (this._disabled) {
+      return;
+    }
     if (this.isFilterSearch) {
       this.core.autoCompleteFilter(input, {
         namespace: this.name,

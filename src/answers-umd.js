@@ -29,6 +29,7 @@ import TranslationProcessor from './core/i18n/translationprocessor';
 import Filter from './core/models/filter';
 import SearchComponent from './ui/components/search/searchcomponent';
 import QueryUpdateListener from './core/statelisteners/queryupdatelistener';
+import ResultsUpdateListener from './core/statelisteners/resultsupdatelistener';
 import { COMPONENT_REGISTRY } from './ui/components/registry';
 import { localizedDistance, parseLocale } from './core/utils/i18nutils';
 import createImpressionEvent from './core/analytics/createimpressionevent';
@@ -262,7 +263,8 @@ class Answers {
         parsedConfig.businessId,
         parsedConfig.analyticsEventsEnabled,
         parsedConfig.analyticsOptions,
-        parsedConfig.environment);
+        parsedConfig.environment,
+        parsedConfig.cloudChoice);
 
       // listen to query id updates
       storage.registerListener({
@@ -293,7 +295,8 @@ class Answers {
       onUniversalSearch: parsedConfig.onUniversalSearch,
       environment: parsedConfig.environment,
       componentManager: this.components,
-      additionalHttpHeaders: parsedConfig.additionalHttpHeaders
+      additionalHttpHeaders: parsedConfig.additionalHttpHeaders,
+      cloudChoice: parsedConfig.cloudChoice
     });
 
     if (parsedConfig.onStateChange && typeof parsedConfig.onStateChange === 'function') {
@@ -305,7 +308,6 @@ class Answers {
     this.components
       .setCore(this.core)
       .setRenderer(this.renderer);
-
     this._setDefaultInitialSearch(parsedConfig.search);
 
     if (parsedConfig.visitor) {
@@ -336,6 +338,10 @@ class Answers {
         this._initQueryUpdateListener(parsedConfig.search);
       }
 
+      if (parsedConfig.useGenerativeDirectAnswers) {
+        this._initResultsUpdateListener();
+      }
+
       this._searchOnLoad();
     });
   }
@@ -346,6 +352,11 @@ class Answers {
       verticalKey
     });
     this.core.setQueryUpdateListener(queryUpdateListener);
+  }
+
+  _initResultsUpdateListener () {
+    const resultsUpdateListener = new ResultsUpdateListener(this.core);
+    this.core.setResultsUpdateListener(resultsUpdateListener);
   }
 
   /**
@@ -417,6 +428,12 @@ class Answers {
       sessionTrackingEnabled = config.sessionTrackingEnabled;
     }
     parsedConfig.sessionTrackingEnabled = sessionTrackingEnabled;
+
+    let useGenerativeDirectAnswers = false;
+    if (typeof config.useGenerativeDirectAnswers === 'boolean') {
+      useGenerativeDirectAnswers = config.useGenerativeDirectAnswers;
+    }
+    parsedConfig.useGenerativeDirectAnswers = useGenerativeDirectAnswers;
 
     if (parsedConfig.apiKey) {
       const sandboxPrefix = `${SANDBOX}-`;
@@ -731,6 +748,7 @@ class Answers {
       this.core.init({ visitor: visitor });
     } else {
       console.error(`Invalid visitor. Visitor was not set because "${JSON.stringify(visitor)}" does not have an id.`);
+      this.core.init();
     }
   }
 }
@@ -788,5 +806,5 @@ function initScrollListener (reporter) {
   });
 }
 
-const ANSWERS = new Answers();
-export default ANSWERS;
+const ANSWERS_SINGLETON = new Answers();
+export default ANSWERS_SINGLETON;
