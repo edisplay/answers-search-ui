@@ -51,7 +51,6 @@
    - [Custom Analytics Using JavaScript](#custom-analytics-using-javascript)
    - [Custom Analytics Using Data Attributes](#custom-analytics-using-data-attributes)
    - [Built-In Analytics Events For CTAs](#built-in-analytics-events-for-ctas)
-   - [Conversion Tracking](#conversion-tracking)
    - [On-Search Analytics](#on-search-analytics)
 8. [Rich Text Formatting](#rich-text-formatting)
 9. [Processing Translations](#processing-translations)
@@ -133,6 +132,8 @@ function initAnswers() {
     experienceKey: '<EXPERIENCE_KEY_HERE>',
     // Optional, indicates the environment to run Answers experience in ('production' or 'sandbox')
     environment: '<ENVIRONMENT_HERE',
+    // Optional*, a Yext Events API Key *required to send analytics events
+    eventsApiKey: '<ENVIRONMENT_HERE',
     // Optional, visitor interacting with the experience, see Visitor Configuration below for details
     visitor: {
       // Required, see below
@@ -348,9 +349,9 @@ The visitor object ties a user's identity to their searches and actions. The vis
 
 ```js
     visitor: {
-      // Required, the ID associated with the user. This will be the yextUserId if Yext Auth is used.
+      // Required, the ID associated with the user. This will be the yextUserId if Yext Auth is used. Max of 64 characters.
       id: '123919',
-      // Optional, the method used to generate the visitor ID.
+      // Optional, the method used to generate the visitor ID. Max of 16 characters.
       idMethod: 'YEXT_USER',
     },
 ```
@@ -1469,7 +1470,7 @@ ANSWERS.addComponent('Facets', {
 
 ### Transforming Facets
 
-The `transformFacets` option of the Facets component allows facets data to be fully customized. The function takes in and returns an array of the answers-core DisplayableFacet which is described [here](https://github.com/yext/answers-core/blob/master/docs/answers-core.displayablefacet.md). The function also has access to the Facets config as the second parameter.
+The `transformFacets` option of the Facets component allows facets data to be fully customized. The function takes in and returns an array of the search-core DisplayableFacet which is described [here](https://github.com/yext/search-core/blob/master/docs/search-core.displayablefacet.md). The function also has access to the Facets config as the second parameter.
 
 Here's an example of using this option to customize a boolean facet.
 
@@ -2404,7 +2405,7 @@ You can learn more about the interface for registering helpers by taking a look 
 
 # Analytics
 
-If a businessId is supplied in the config, Answers will track some basic interaction analytics automatically, such as search bar impressions and Call-To-Action clicks.
+If a businessId and eventsApiKey are supplied in the config, Answers will track some basic interaction analytics automatically, such as search bar impressions and Call-To-Action clicks.
 
 If you would like to add custom analytics on top of the built-in ones, use the following:
 
@@ -2433,33 +2434,18 @@ You may add additional, custom analytic events to templates using certain data a
 
 ## Built-In Analytics Events For CTAs
 Here are the possible Event Types for CTAs:
-- TITLE_CLICK
+- TITLE
 - CTA_CLICK
 - TAP_TO_CALL
-- ORDER_NOW
+- ORDER
 - ADD_TO_CART
-- APPLY_NOW
+- APPLY
 - DRIVING_DIRECTIONS
-- VIEW_WEBSITE
-- EMAIL
-- BOOK_APPOINTMENT
-- RSVP
+- WEBSITE
+- MESSAGE
+- BOOK
 
 These types are accepted as the `analytics` attribute in [Calls To Action](#Calls-To-Action).
-
-## Conversion Tracking
-
-By default, Answers does not perform conversion tracking for analytics. To opt-in to this behavior, use the `setConversionsOptIn` method after initialization:
-
-```js
-ANSWERS.init({ ... });
-agreementButton.onclick = function() { ANSWERS.setConversionsOptIn(true); };
-```
-
-You must also add the following to your HTML:
-
-```html
-<script src="https://assets.sitescdn.net/ytag/ytag.min.js"></script>
 ```
 
 ## On-Search Analytics

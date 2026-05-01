@@ -51,11 +51,11 @@ describe('AUTO_COMPLETE_SELECTION analytics event fire as expected', () => {
     wrapper
       .find("[data-value='test prompt \"some text ...more text.\"  for TEST output']")
       .getDOMNode()
-      .dispatchEvent(new MouseEvent('mousedown', { button: 0 }));
+      .dispatchEvent(new MouseEvent('click', { button: 0 }));
 
     expect(mockAnalyticsReporter.report).toHaveBeenCalledTimes(1);
     const expectedEvent = {
-      eventType: "AUTO_COMPLETE_SELECTION",
+      action: "AUTO_COMPLETE_SELECTION",
       suggestedSearchText: "test prompt \"some text ...more text.\"  for TEST output"
     };
     expect(mockAnalyticsReporter.report).toHaveBeenLastCalledWith(expectedEvent);

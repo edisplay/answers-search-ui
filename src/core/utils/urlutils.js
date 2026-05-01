@@ -1,4 +1,5 @@
-import { PRODUCTION, SANDBOX } from '../constants';
+import { CloudRegion } from '@yext/search-core';
+import { PRODUCTION, SANDBOX, CLOUD_REGION, GLOBAL_MULTI, GLOBAL_GCP } from '../constants';
 import SearchParams from '../../ui/dom/searchparams';
 import StorageKeys from '../storage/storagekeys';
 import ComponentTypes from '../../ui/components/componenttypes';
@@ -12,27 +13,25 @@ export function getLiveApiUrl (env = PRODUCTION) {
 }
 
 /**
- * Returns the base url for the live api backend in the desired environment.
- * @param {string} env The desired environment.
+ * Returns the base url for the analytics backend in the desired environment.
+ * @param {string} env The desired environment.]
+ * @param {string} cloudChoice The choice of cloud provider.
  */
-export function getCachedLiveApiUrl (env = PRODUCTION) {
-  return env === SANDBOX ? 'https://liveapi-sandbox.yext.com' : 'https://liveapi-cached.yext.com';
+export function getAnalyticsUrl (env = PRODUCTION, cloudChoice = GLOBAL_MULTI) {
+  const cloudRegionString = isEu() ? 'eu' : 'us';
+  let envAndCloudChoice = '';
+  if (env === SANDBOX && cloudChoice === GLOBAL_GCP) {
+    envAndCloudChoice = 'sandbox-gcp.';
+  } else if (env === SANDBOX) {
+    envAndCloudChoice = 'sandbox.';
+  } else if (cloudChoice === GLOBAL_GCP) {
+    envAndCloudChoice = 'gcp.';
+  }
+  return 'https://' + envAndCloudChoice + cloudRegionString + '.yextevents.com';
 }
 
-/**
- * Returns the base url for the analytics backend in the desired environment.
- * @param {string} env The desired environment.
- * @param {boolean} conversionTrackingEnabled If conversion tracking has been opted into.
- */
-export function getAnalyticsUrl (env = PRODUCTION, conversionTrackingEnabled = false) {
-  if (conversionTrackingEnabled) {
-    return env === SANDBOX
-      ? 'https://sandbox-realtimeanalytics.yext.com'
-      : 'https://realtimeanalytics.yext.com';
-  }
-  return env === SANDBOX
-    ? 'https://sandbox-answers.yext-pixel.com'
-    : 'https://answers.yext-pixel.com';
+function isEu () {
+  return CLOUD_REGION.toLowerCase() === CloudRegion.EU.toString();
 }
 
 /**

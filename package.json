@@ -1,6 +1,6 @@
 {
   "name": "@yext/answers-search-ui",
-  "version": "1.14.1",
+  "version": "2.0.1",
   "description": "Javascript Search Programming Interface",
   "main": "dist/answers-umd.js",
   "repository": {
@@ -28,9 +28,9 @@
   ],
   "dependencies": {
     "@mapbox/mapbox-gl-language": "^0.10.1",
-    "@yext/answers-core": "^1.6.0",
     "@yext/answers-storage": "^1.1.0",
-    "@yext/rtf-converter": "^1.7.0",
+    "@yext/rtf-converter": "^1.7.1",
+    "@yext/search-core": "^2.8.0",
     "bowser": "^2.11.0",
     "cross-fetch": "^3.1.5",
     "css-vars-ponyfill": "^2.4.3",
@@ -63,6 +63,7 @@
     "@size-limit/file": "^4.9.0",
     "@types/jest": "^24.0.15",
     "autoprefixer": "^10.4.4",
+    "cheerio": "1.0.0-rc.12",
     "cross-env": "^7.0.3",
     "cssnano": "^5.1.4",
     "del": "^6.0.0",
@@ -82,7 +83,7 @@
     "gulp-declare": "^0.3.0",
     "gulp-filter": "^7.0.0",
     "gulp-handlebars": "^5.0.2",
-    "gulp-postcss": "^8.0.0",
+    "gulp-postcss": "^9.0.0",
     "gulp-remove-code": "^3.0.4",
     "gulp-rename": "^1.4.0",
     "gulp-replace": "^1.0.0",
@@ -96,11 +97,11 @@
     "i18next-conv": "^10.0.2",
     "jest": "^24.8.0",
     "jest-transform-stub": "^2.0.0",
-    "postcss": "^8.4.12",
+    "postcss": "8.4.31",
     "postcss-pxtorem": "^6.0.0",
     "puppeteer": "^13.5.1",
     "regenerator-runtime": "0.13.1",
-    "rollup": "^1.4.1",
+    "rollup": "2.79.2",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^9.2.1",
     "rollup-plugin-node-builtins": "^2.1.2",
@@ -112,7 +113,7 @@
     "size-limit": "^4.9.0",
     "stylelint": "^14.5.3",
     "stylelint-config-standard-scss": "^3.0.0",
-    "testcafe": "^1.19.0",
+    "testcafe": "^3.7.3",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0"
   },
@@ -139,9 +140,9 @@
   },
   "overrides": {
     "regenerator-runtime": "0.13.1",
-    "postcss": "^8.4.12",
     "ansi-regex": "^5.0.1",
-    "eslint": "^8.11.0"
+    "eslint": "^8.11.0",
+    "rollup": "2.79.2"
   },
   "jest": {
     "bail": 0,
