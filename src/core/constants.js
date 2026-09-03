@@ -9,6 +9,14 @@ export const LOCALE = '@@LOCALE';
 /** The speech recognition locales supported by Microsoft Edge */
 export const SPEECH_RECOGNITION_LOCALES_SUPPORTED_BY_EDGE = '@@SPEECH_RECOGNITION_LOCALES_SUPPORTED_BY_EDGE';
 
+/** The cloud region being used, injected by the build process */
+export const CLOUD_REGION = '@@CLOUD_REGION';
+/** The identifier for all cloud providers */
+export const GLOBAL_MULTI = 'multi';
+
+/** The identifier for using GCP */
+export const GLOBAL_GCP = 'gcp';
+
 /** The identifier of the production environment */
 export const PRODUCTION = 'production';
 

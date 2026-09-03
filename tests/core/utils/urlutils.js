@@ -2,7 +2,6 @@ import SearchParams from '../../../src/ui/dom/searchparams';
 import { PRODUCTION, SANDBOX } from '../../../src/core/constants';
 import {
   getLiveApiUrl,
-  getCachedLiveApiUrl,
   getAnalyticsUrl,
   replaceUrlParams,
   urlWithoutQueryParamsAndHash,
@@ -15,20 +14,18 @@ const baseUrl = 'https://yext.com/';
 describe('getUrlFunctions work', () => {
   it('differentiates sandbox from prod', () => {
     expect(getLiveApiUrl()).not.toEqual(expect.stringContaining('sandbox'));
-    expect(getCachedLiveApiUrl()).not.toEqual(expect.stringContaining('sandbox'));
     expect(getAnalyticsUrl()).not.toEqual(expect.stringContaining('sandbox'));
 
     expect(getLiveApiUrl(SANDBOX)).toEqual(expect.stringContaining('sandbox'));
-    expect(getCachedLiveApiUrl(SANDBOX)).toEqual(expect.stringContaining('sandbox'));
     expect(getAnalyticsUrl(SANDBOX)).toEqual(expect.stringContaining('sandbox'));
   });
 
-  it('differentiates conversion tracking in analytics url', () => {
-    expect(getAnalyticsUrl(PRODUCTION, true)).toEqual(expect.stringContaining('realtimeanalytics'));
-    expect(getAnalyticsUrl(SANDBOX, true)).toEqual(expect.stringContaining('realtimeanalytics'));
+  it('differentiates gcp from global', () => {
+    expect(getAnalyticsUrl(PRODUCTION, 'gcp')).toEqual(expect.stringContaining('gcp'));
+    expect(getAnalyticsUrl(SANDBOX, 'gcp')).toEqual(expect.stringContaining('sandbox-gcp'));
 
-    expect(getAnalyticsUrl(PRODUCTION)).not.toEqual(expect.stringContaining('realtimeanalytics'));
-    expect(getAnalyticsUrl(SANDBOX)).not.toEqual(expect.stringContaining('realtimeanalytics'));
+    expect(getAnalyticsUrl(PRODUCTION)).not.toEqual(expect.stringContaining('gcp'));
+    expect(getAnalyticsUrl(SANDBOX)).not.toEqual(expect.stringContaining('sandbox-gcp'));
   });
 });
 

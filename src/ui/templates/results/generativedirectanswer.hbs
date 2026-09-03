@@ -1,0 +1,94 @@
+{{#if customCard}}
+  <div class="yxt-GenerativeDirectAnswer--customComponent" data-component="{{customCard}}"></div>
+{{else if (eq searchState "search-loading")}}
+  <div class="yxt-GenerativeDirectAnswer">
+    <div class="yxt-GenerativeDirectAnswer-title">
+      <h2 class="yxt-GenerativeDirectAnswer-titleText">
+        AI Generating Answer...
+      </h2>
+    </div>
+  </div>
+{{else if (eq generativeDirectAnswer.resultStatus "SUCCESS")}}
+  <div class="yxt-GenerativeDirectAnswer">
+    <div class="yxt-GenerativeDirectAnswer-title">
+      <h2 class="yxt-GenerativeDirectAnswer-titleText">
+        AI-Generated Answer
+      </h2>
+      {{#unless _config.hideAISignpost}}
+        <div class="yxt-GenerativeDirectAnswer-aiSignpost">
+          <button
+            class="yxt-GenerativeDirectAnswer-aiSignpostButton js-yxt-GenerativeDirectAnswer-aiSignpostButton"
+            type="button"
+            aria-expanded="false"
+            aria-label=
+            {{#unless (eq _config.aiSignpost.label "")}}
+              {{_config.aiSignpost.label}}
+            {{else}}
+              "AI-Generated Content"
+            {{/unless}}
+            aria-controls="yxt-GenerativeDirectAnswer-aiSignpostPopover-{{name}}">
+            {{> icons/iconPartial
+              iconName=_config.aiSignpost.iconName
+              iconUrl=_config.aiSignpost.iconUrl
+              classNames='yxt-GenerativeDirectAnswer-aiSignpostIcon'}}
+            {{#if _config.aiSignpost.label}}
+              <span class="yxt-GenerativeDirectAnswer-aiSignpostLabel">
+                {{_config.aiSignpost.label}}
+              </span>
+            {{/if}}
+          </button>
+          <div
+            class="yxt-GenerativeDirectAnswer-aiSignpostPopover js-yxt-GenerativeDirectAnswer-aiSignpostPopover"
+            id="yxt-GenerativeDirectAnswer-aiSignpostPopover-{{name}}"
+            role="dialog"
+            aria-labelledby="yxt-GenerativeDirectAnswer-aiSignpostPopoverHeader-{{name}}"
+            aria-describedby="yxt-GenerativeDirectAnswer-aiSignpostPopoverBody-{{name}}"
+            hidden>
+            <div class="yxt-GenerativeDirectAnswer-aiSignpostPopoverHeader">
+              <div
+                class="yxt-GenerativeDirectAnswer-aiSignpostPopoverHeaderText"
+                id="yxt-GenerativeDirectAnswer-aiSignpostPopoverHeader-{{name}}">
+                {{_config.aiSignpost.popoverHeader}}
+              </div>
+              <button
+                class="yxt-GenerativeDirectAnswer-aiSignpostClose js-yxt-GenerativeDirectAnswer-aiSignpostClose"
+                type="button"
+                aria-label="{{translate phrase='Dismiss' }}">
+                {{> icons/builtInIcon iconName='close'}}
+              </button>
+            </div>
+            <div
+              class="yxt-GenerativeDirectAnswer-aiSignpostPopoverBody"
+              id="yxt-GenerativeDirectAnswer-aiSignpostPopoverBody-{{name}}">
+              {{_config.aiSignpost.popoverBody}}
+            </div>
+          </div>
+        </div>
+      {{/unless}}
+    </div>
+    <div class="yxt-GenerativeDirectAnswer-content">
+      <div class="yxt-GenerativeDirectAnswer-snippet">
+        {{{ generativeDirectAnswer.directAnswer }}}
+      </div>
+      <hr class="yxt-GenerativeDirectAnswer-citationsDivider" noshade>
+      <h2 class="yxt-GenerativeDirectAnswer-citationsHeader">
+          Sources ({{generativeDirectAnswer.citationsData.length}})
+      </h2>
+      <div class="yxt-GenerativeDirectAnswer-citationsScroller">
+          {{#each generativeDirectAnswer.citationsData}}
+          <a class="yxt-GenerativeDirectAnswer-citationCard js-gda-citation"
+            data-entityid={{this.id}}
+            data-eventtype="CITATION_CLICK"
+            data-is-analytics-attached="true"
+            target="{{#if ../_config.linkTarget}}{{../_config.linkTarget}}{{else}}_blank{{/if}}"
+            >
+            <span class="yxt-GenerativeDirectAnswer-citationName">{{this.name}}</span>
+            {{#if this.description}}
+              <p class="yxt-GenerativeDirectAnswer-citationDescription">{{this.description}}</p>
+            {{/if}}
+          </a>
+          {{/each}}
+      </div>
+    </div>
+  </div>
+{{/if}}

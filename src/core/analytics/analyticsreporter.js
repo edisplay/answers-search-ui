@@ -1,8 +1,7 @@
 /** @module AnalyticsReporter */
 
 import AnalyticsEvent from './analyticsevent';
-import { AnswersAnalyticsError } from '../errors/errors';
-import { PRODUCTION } from '../constants';
+import { GLOBAL_MULTI, PRODUCTION } from '../constants';
 import HttpRequester from '../http/httprequester';
 import { getAnalyticsUrl } from '../utils/urlutils';
 
@@ -19,8 +18,10 @@ export default class AnalyticsReporter {
     experienceVersion,
     businessId,
     analyticsEventsEnabled,
+    eventsApiKey,
     globalOptions = {},
-    environment = PRODUCTION) {
+    environment = PRODUCTION,
+    cloudChoice = GLOBAL_MULTI) {
     /**
      * The internal business identifier used for reporting
      * @type {number}
@@ -48,18 +49,24 @@ export default class AnalyticsReporter {
     this._environment = environment;
 
     /**
+     * The choice of Cloud Provider
+     * @type {string}
+     * @private
+     */
+    this._cloudChoice = cloudChoice;
+
+    /**
      * Base URL for the analytics API
      * @type {string}
      * @private
      */
-    this._baseUrl = getAnalyticsUrl(this._environment);
+    this._baseUrl = getAnalyticsUrl(this._environment, this._cloudChoice);
 
     /**
-     * Boolean indicating if opted in or out of conversion tracking
-     * @type {boolean}
-     * @private
+     * The key authorized for the Events API
+     * @type {string}
      */
-    this._conversionTrackingEnabled = false;
+    this._eventsApiKey = eventsApiKey;
 
     if (experienceVersion) {
       this._globalOptions.experienceVersion = experienceVersion;
@@ -72,6 +79,22 @@ export default class AnalyticsReporter {
 
   setQueryId (queryId) {
     this._globalOptions.queryId = queryId;
+  }
+
+  getSearchId () {
+    return this._globalOptions.searchId;
+  }
+
+  setSearchId (searchId) {
+    this._globalOptions.searchId = searchId;
+  }
+
+  getSearchTerm () {
+    return this._globalOptions.searchTerm;
+  }
+
+  setSearchTerm (searchTerm) {
+    this._globalOptions.searchTerm = searchTerm;
   }
 
   setVisitor (visitor) {
@@ -104,36 +127,44 @@ export default class AnalyticsReporter {
     if (!this._analyticsEventsEnabled) {
       return false;
     }
-    let cookieData = {};
-    if (this._conversionTrackingEnabled && typeof ytag === 'function') {
-      ytag('optin', true);
-      cookieData = ytag('yfpc', null);
-    } else if (this._conversionTrackingEnabled) {
-      throw new AnswersAnalyticsError('Tried to enable conversion tracking without including ytag');
+    if (!this._eventsApiKey) {
+      console.error('A valid eventsApiKey must be set in the config to send Analytics Events');
+      return false;
     }
 
     if (!(event instanceof AnalyticsEvent)) {
-      throw new AnswersAnalyticsError('Tried to send invalid analytics event', event);
+      console.error('Tried to send invalid analytics event', event);
+      return false;
     }
 
-    if (includeQueryId) {
-      event.addOptions(this._globalOptions);
-    } else {
-      event.addOptions({
-        ...this._globalOptions,
-        queryId: undefined
-      });
-    }
+    event.addOptions(this._globalOptions);
+    const searchTerm = this.getSearchTerm();
+
+    const apiEvent = event.toApiEvent();
+    const eventPayload = {
+      action: apiEvent.action,
+      authorization: 'KEY ' + this._eventsApiKey,
+      ...(event.destinationUrl !== undefined && { destinationUrl: event.destinationUrl }),
+      ...(event.entityId !== undefined && { entity: event.entityId }),
+      ...(event.label !== undefined && { label: event.label }),
+      ...(event.locale !== undefined && { locale: event.locale }),
+      search: {
+        ...(event.directAnswer !== undefined && { isDirectAnswer: event.directAnswer }),
+        experienceKey: this._globalOptions.experienceKey,
+        ...(event.generativeDirectAnswer !== undefined &&
+            { isGenerativeDirectAnswer: event.generativeDirectAnswer }),
+        ...(includeQueryId && { queryId: this.getQueryId() }),
+        ...(includeQueryId && { searchId: this.getSearchId() }),
+        versionLabel: this._globalOptions.experienceVersion,
+        ...(event.verticalKey !== undefined && { verticalKey: event.verticalKey })
+      },
+      ...(!!searchTerm && { searchTerm: searchTerm }),
+      ...(event.visitor !== undefined && { visitor: event.visitor })
+    };
 
     return new HttpRequester().beacon(
-      `${this._baseUrl}/realtimeanalytics/data/answers/${this._businessId}`,
-      { data: event.toApiEvent(), ...cookieData }
+      `${this._baseUrl}/accounts/me/events`,
+      eventPayload
     );
-  }
-
-  /** @inheritdoc */
-  setConversionTrackingEnabled (isEnabled) {
-    this._conversionTrackingEnabled = isEnabled;
-    this._baseUrl = getAnalyticsUrl(this._environment, isEnabled);
   }
 }
