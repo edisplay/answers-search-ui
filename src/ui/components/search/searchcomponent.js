@@ -13,6 +13,16 @@ import SearchBarIconController from '../../controllers/searchbariconcontroller';
 import alert from '../../alert';
 import { constructRedirectUrl } from '../../tools/urlutils';
 
+const DEFAULT_AI_SIGNPOST = {
+  iconName: 'ai_signpost',
+  popoverHeader: TranslationFlagger.flag({
+    phrase: 'Powered by AI'
+  }),
+  popoverBody: TranslationFlagger.flag({
+    phrase: 'Search may use AI to find, prioritize, and output results. AI responses may be incomplete or inaccurate and should be checked.'
+  })
+};
+
 /**
  * SearchComponent exposes an interface in order to create
  * a UI Search experience for vertical and universal search.
@@ -275,7 +285,9 @@ export default class SearchComponent extends Component {
       shouldHideOnEmptySearch: config.autocomplete && config.autocomplete.shouldHideOnEmptySearch,
       onOpen: config.autocomplete && config.autocomplete.onOpen,
       onClose: config.autocomplete && config.autocomplete.onClose,
-      customPrompts: config.autocomplete && config.autocomplete.customPrompts
+      customPrompts: config.autocomplete && config.autocomplete.customPrompts,
+      autocompleteContainerIdName: this.autocompleteContainerIdName,
+      disabled: this._autocompleteDisabled
     };
 
     if (!this._isTwin) {
@@ -295,6 +307,13 @@ export default class SearchComponent extends Component {
     this._customLoadingIconUrl = config.loadingIndicator?.iconUrl || null;
 
     this._voiceSearchConfig = config.voiceSearch || {};
+
+    /**
+     * Whether or not the AI signpost should appear
+     * @type {boolean}
+     */
+    this._showAISignpost = config.showAISignpost === true;
+    this._aiSignpost = DEFAULT_AI_SIGNPOST;
 
     /**
      * Whether or not voice search should be enabled
@@ -317,6 +336,13 @@ export default class SearchComponent extends Component {
     this._customMicIconUrl = config.voiceSearch?.customMicIconUrl;
 
     this._customListeningIconUrl = config.voiceSearch?.customListeningIconUrl;
+
+    /**
+     * Disables autocomplete if set to true.
+     * Optionally provided, defaults to false.
+     * @type {boolean}
+     */
+    this._autocompleteDisabled = config.autocomplete?.disabled === true;
   }
 
   /**
@@ -364,6 +390,7 @@ export default class SearchComponent extends Component {
     }
 
     this.initSearchBarIconController();
+    this._bindAISignpost();
 
     // Wire up our search handling and auto complete
     this.initSearch(this._formEl);
@@ -401,6 +428,35 @@ export default class SearchComponent extends Component {
     if (!config.useCustomIcon) {
       this.searchBarIconController.setupAnimatedIconEvents();
     }
+  }
+
+  /**
+   * Wires up the AI signpost popover toggle behavior.
+   */
+  _bindAISignpost () {
+    const signpost = DOM.query(this._container, '.yxt-SearchBar-aiSignpost');
+    const signpostButton = DOM.query(this._container, '.js-yxt-SearchBar-aiSignpostButton');
+    const signpostPopover = DOM.query(this._container, '.js-yxt-SearchBar-aiSignpostPopover');
+    const signpostCloseButton = DOM.query(this._container, '.js-yxt-SearchBar-aiSignpostClose');
+    if (!signpost || !signpostButton || !signpostPopover) {
+      return;
+    }
+
+    const setIsOpen = isOpen => {
+      signpostButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      signpostPopover.hidden = !isOpen;
+    };
+
+    DOM.on(signpostButton, 'click', () => {
+      setIsOpen(signpostButton.getAttribute('aria-expanded') !== 'true');
+    });
+
+    signpostCloseButton && DOM.on(signpostCloseButton, 'click', () => setIsOpen(false));
+    DOM.on(document, 'click', event => {
+      if (!signpost.contains(event.target)) {
+        setIsOpen(false);
+      }
+    });
   }
 
   remove () {
@@ -541,6 +597,10 @@ export default class SearchComponent extends Component {
   initAutoComplete (inputSelector) {
     this._inputEl = inputSelector;
 
+    if (this._autocompleteDisabled) {
+      return;
+    }
+
     if (this._autocomplete) {
       this._autocomplete.remove();
     }
@@ -555,6 +615,7 @@ export default class SearchComponent extends Component {
       originalQuery: this.query,
       inputEl: inputSelector,
       listLabelIdName: this.inputLabelIdName,
+      listLabelText: this.labelText,
       ...this._autocompleteConfig,
       onSubmit: () => {
         if (this._useForm) {
@@ -583,7 +644,7 @@ export default class SearchComponent extends Component {
    * @returns {Promise} A promise that will perform the query and update storage accordingly.
    */
   promptForLocation (query) {
-    if (this._promptForLocation) {
+    if (!this._autocompleteDisabled && this._promptForLocation) {
       return this.fetchQueryIntents(query)
         .then(queryIntents => queryIntents?.includes('NEAR_ME'))
         .then(queryHasNearMeIntent => {
@@ -677,6 +738,7 @@ export default class SearchComponent extends Component {
       labelText: this.labelText,
       inputLabelIdName: this.inputLabelIdName,
       submitIcon: this.submitIcon,
+      searchBarContainerId: this._container?.id || '',
       submitText: this.submitText,
       clearText: this.clearText,
       showClearButton: this._showClearButton,
@@ -685,6 +747,8 @@ export default class SearchComponent extends Component {
       customLoadingIconUrl: this._customLoadingIconUrl,
       customListeningIconUrl: this._customListeningIconUrl,
       showVoiceSearch: this._showVoiceSearch,
+      showAISignpost: this._showAISignpost,
+      aiSignpost: this._aiSignpost,
       query: this.query || '',
       eventOptions: this.eventOptions(),
       iconId: this.name,
@@ -692,7 +756,8 @@ export default class SearchComponent extends Component {
       reverseIconOpts: reverseIconOpts,
       autoFocus: this.autoFocus && !this.query,
       useForm: this._useForm,
-      autocompleteContainerIdName: this.autocompleteContainerIdName
+      autocompleteContainerIdName: this.autocompleteContainerIdName,
+      autocompleteDisabled: this._autocompleteDisabled
     }, data));
   }
 

@@ -111,12 +111,17 @@ export default class Result {
      * @type {number}
      */
     this.distanceFromFilter = data.distanceFromFilter || null;
+    /**
+     * In the case of a Document Vertical result grouped by segments, the formatted segment data
+     * @type {Object}
+     */
+    this.segment = data.segment || null;
   }
 
   /**
-   * Constructs an SDK Result from an answers-core Result
+   * Constructs an SDK Result from an search-core Result
    *
-   * @param {Result} result from answers-core
+   * @param {Result} result from search-core
    * @param {Object<string, function>} formatters applied to the result fields
    * @param {string} verticalKey the verticalKey associated with the result
    * @returns {@link Result}
@@ -137,10 +142,11 @@ export default class Result {
       distance: result.distance,
       distanceFromFilter: result.distanceFromFilter,
       highlighted: appliedHighlightedFields,
-      highlightedFields
+      highlightedFields,
+      segment: result.segment
     };
 
-    if (result.source !== 'KNOWLEDGE_MANAGER') {
+    if (result.source !== 'KNOWLEDGE_MANAGER' && result.source !== 'DOCUMENT_VERTICAL') {
       return new Result(resultData);
     }
 

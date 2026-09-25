@@ -1,4 +1,4 @@
-name: Deploy assets to AWS S3 with hold state setup in github's production environment
+name: Deploy assets to AWS S3 and GCP Cloud Storage with hold state setup in github's production environment
 
 on:
   workflow_call:
@@ -19,27 +19,57 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
+      GCP_SA_KEY:
+        required: true
 
 jobs:
-  deploy:
+  deploy-aws:
     runs-on: ubuntu-latest
-    environment: production # sets in github repo with reiewer requirement protection rule
+    environment: production # sets in github repo with reviewer requirement protection rule
     steps:
-      - uses: actions/checkout@v2
-      - name: Download build-output artifact
-        uses: actions/download-artifact@v2
+      - uses: actions/checkout@v4
+      - name: Download build-output-US artifact
+        uses: actions/download-artifact@v4
         with:
-          name: build-output
+          name: build-output-US
           path: dist/
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - name: Deploy to S3
         run: |
-          aws s3 cp ./dist/ s3://assets.sitescdn.net/${{ inputs.bucket }}/${{ inputs.directory }} \
+          aws s3 cp ./dist/ s3://assets.sitescdn.net/"$BUCKET"/"$DIRECTORY" \
           --acl public-read \
           --recursive \
-          --cache-control ${{ inputs.cache-control }}
+          --cache-control "$CACHE_CONTROL"
+        env:
+          BUCKET: ${{ inputs.bucket }}
+          DIRECTORY: ${{ inputs.directory }}
+          CACHE_CONTROL: ${{ inputs.cache-control }}
+
+  deploy-gcp:
+    runs-on: ubuntu-latest
+    environment: production # sets in github repo with reviewer requirement protection rule
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build-output-EU artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output-EU
+          path: dist/
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+      - name: Deploy to GCP Bucket
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: dist/
+          parent: false
+          destination: assets-eu.sitescdn.net/${{ inputs.bucket }}/${{ inputs.directory }}
+          headers: |-
+            cache-control: ${{ inputs.cache-control }}
